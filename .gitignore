@@ -1,0 +1,18 @@
+# Gradle files
+.gradle/
+build/
+*/build/
+
+# Local configuration
+local.properties
+
+# IDE files
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# APKs
+*.apk
+*.ap_

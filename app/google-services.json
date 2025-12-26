@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "349150427832",
+    "project_id": "finoptics-79357",
+    "storage_bucket": "finoptics-79357.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:349150427832:android:bc0035d9bd61d86db9124d",
+        "android_client_info": {
+          "package_name": "com.example.finoptics"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC75wG23nqAii-ewx7A8b3-J211lSvTc5I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
