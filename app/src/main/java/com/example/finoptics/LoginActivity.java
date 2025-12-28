@@ -16,26 +16,27 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+// IMPORT FIRESTORE
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class LoginActivity extends AppCompatActivity {
 
-    // IMPORTANT: Even if your XML ID is etUsername, this field should be for the user's EMAIL.
     EditText etEmail;
     EditText etPassword;
     Button btnLogin;
     TextView tvSignUp;
     FirebaseAuth mAuth;
+    // Add Firestore instance
+    FirebaseFirestore db;
 
     @Override
     public void onStart() {
         super.onStart();
-        // Check if user is signed in (non-null).
         FirebaseUser currentUser = mAuth.getCurrentUser();
         if (currentUser != null) {
-            // User is already logged in, go directly to HomeActivity
-            Intent intent = new Intent(getApplicationContext(), HomeActivity.class);
-            startActivity(intent);
-            finish();
+            // Updated to check budget even on auto-login
+            checkUserBudgetAndNavigate();
         }
     }
 
@@ -44,10 +45,11 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
+        // Initialize Firestore
+        db = FirebaseFirestore.getInstance();
 
-        etEmail = findViewById(R.id.etUsername); // Assumes this EditText is for the email
+        etEmail = findViewById(R.id.etUsername);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         tvSignUp = findViewById(R.id.tvSignUp);
@@ -63,19 +65,15 @@ public class LoginActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Use Firebase to sign in the user
                 mAuth.signInWithEmailAndPassword(email, password)
                         .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
-                                    // Sign in success
                                     Toast.makeText(LoginActivity.this, "Login Successful.", Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(getApplicationContext(), HomeActivity.class);
-                                    startActivity(intent);
-                                    finish();
+                                    // New Logic: Check budget before going to Home
+                                    checkUserBudgetAndNavigate();
                                 } else {
-                                    // If sign in fails, display a message to the user.
                                     Toast.makeText(LoginActivity.this, "Authentication failed.", Toast.LENGTH_SHORT).show();
                                 }
                             }
@@ -90,5 +88,31 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-}
 
+    // NEW METHOD: Redirects user based on whether budget is set
+    private void checkUserBudgetAndNavigate() {
+        String userId = mAuth.getCurrentUser().getUid();
+
+        db.collection("Users").document(userId).get()
+                .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document.exists() && document.contains("monthly_budget")) {
+                                // Budget exists -> Go to Home
+                                startActivity(new Intent(LoginActivity.this, HomeActivity.class));
+                            } else {
+                                // Budget missing -> Go to Setup
+                                startActivity(new Intent(LoginActivity.this, SetupActivity.class));
+                            }
+                            finish();
+                        } else {
+                            // If Firestore fails, default to Home so user isn't stuck
+                            startActivity(new Intent(LoginActivity.this, HomeActivity.class));
+                            finish();
+                        }
+                    }
+                });
+    }
+}

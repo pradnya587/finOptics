@@ -15,7 +15,9 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SignUpActivity extends AppCompatActivity {
 
@@ -23,14 +25,15 @@ public class SignUpActivity extends AppCompatActivity {
     Button btnSignUp;
     TextView tvLogin;
     FirebaseAuth mAuth;
+    FirebaseFirestore db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sign_up);
 
-        // Initialize Firebase Auth
         mAuth = FirebaseAuth.getInstance();
+        db = FirebaseFirestore.getInstance();
 
         etUsername = findViewById(R.id.etUsername);
         etEmail = findViewById(R.id.etEmail);
@@ -50,21 +53,26 @@ public class SignUpActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Use Firebase to create a new user
+                // 1. Create the user account
                 mAuth.createUserWithEmailAndPassword(email, password)
                         .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
                                 if (task.isSuccessful()) {
-                                    // Sign in success
+                                    // 2. Account Created! Show Toast immediately.
                                     Toast.makeText(SignUpActivity.this, "Account Created.", Toast.LENGTH_SHORT).show();
-                                    Intent intent = new Intent(getApplicationContext(), HomeActivity.class);
-                                    // Clear the back stack so the user can't return to sign up page
+
+                                    // 3. Save username to Firestore in the background
+                                    saveUserToFirestore(username);
+
+                                    // 4. MOVE TO SETUP ACTIVITY IMMEDIATELY
+                                    // We don't wait for Firestore success here to avoid the "frozen screen" bug.
+                                    Intent intent = new Intent(SignUpActivity.this, SetupActivity.class);
                                     intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
                                     startActivity(intent);
                                     finish();
+
                                 } else {
-                                    // If sign in fails, display a message to the user.
                                     Toast.makeText(SignUpActivity.this, "Authentication failed: " + task.getException().getMessage(),
                                             Toast.LENGTH_LONG).show();
                                 }
@@ -73,11 +81,18 @@ public class SignUpActivity extends AppCompatActivity {
             }
         });
 
-        tvLogin.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startActivity(new Intent(SignUpActivity.this, LoginActivity.class));
-            }
-        });
+        tvLogin.setOnClickListener(v -> startActivity(new Intent(SignUpActivity.this, LoginActivity.class)));
+    }
+
+    private void saveUserToFirestore(String username) {
+        if (mAuth.getCurrentUser() == null) return;
+
+        String userId = mAuth.getCurrentUser().getUid();
+        Map<String, Object> user = new HashMap<>();
+        user.put("username", username);
+        user.put("email", mAuth.getCurrentUser().getEmail());
+
+        // This runs in the background while the user is already looking at the Setup screen.
+        db.collection("Users").document(userId).set(user);
     }
 }
