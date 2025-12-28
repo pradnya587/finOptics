@@ -1,0 +1,54 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="30dp"
+    android:gravity="center"
+    android:background="#F8F9FA">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Set Your Budget"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:textColor="#1A237E" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="How much do you plan to spend this month?"
+        android:textAlignment="center"
+        android:layout_marginTop="8dp"
+        android:textColor="#757575" />
+
+    <EditText
+        android:id="@+id/etMonthlyBudget"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:layout_marginTop="40dp"
+        android:hint="₹ 10,000"
+        android:inputType="number"
+        android:textAlignment="center"
+        android:textSize="24sp"
+        android:background="@drawable/edittext_rounded_bg" />
+
+    <Button
+        android:id="@+id/btnSaveBudget"
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:text="Start Tracking"
+        android:layout_marginTop="30dp"
+        android:backgroundTint="#00BFA5"
+        android:textColor="@color/white" />
+
+    <TextView
+        android:id="@+id/tvSkipSetup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="I'll do this later"
+        android:layout_marginTop="20dp"
+        android:textColor="#757575"
+        android:padding="10dp" />
+
+</LinearLayout>
