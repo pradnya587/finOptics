@@ -1,26 +1,24 @@
 package com.example.finoptics;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat; // Added for compatibility
 
-import com.google.ai.client.generativeai.GenerativeModel;
-import com.google.ai.client.generativeai.java.GenerativeModelFutures;
-import com.google.ai.client.generativeai.type.Content;
-import com.google.ai.client.generativeai.type.GenerateContentResponse;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import org.json.JSONObject;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -28,17 +26,27 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class AddExpenseActivity extends AppCompatActivity {
 
     private EditText etSmartInput;
     private Button btnSave;
     private ProgressBar progressBar;
+
     private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    private Map<String, String> localVendorMap = new HashMap<>();
-    private Map<String, List<String>> keywordClusters = new HashMap<>();
-    private GenerativeModelFutures model;
+    private final Map<String, String> localVendorMap = new HashMap<>();
+    private final Map<String, List<String>> keywordClusters = new HashMap<>();
+
+    private static final String TAG = "FinOptics_Gemini";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,111 +60,206 @@ public class AddExpenseActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSaveExpense);
         progressBar = findViewById(R.id.progressBar);
 
-        // API Key safety: In a real interview, mention using local.properties
-        GenerativeModel gm = new GenerativeModel("gemini-1.5-flash", "YOUR_API_KEY");
-        model = GenerativeModelFutures.from(gm);
-
         initLocalData();
+
         btnSave.setOnClickListener(v -> startSmartCategorization());
     }
 
+    /* -------------------- LOCAL DATA -------------------- */
+
     private void initLocalData() {
+        localVendorMap.put("zomato", "Food");
+        localVendorMap.put("swiggy", "Food");
         localVendorMap.put("starbucks", "Food");
+        localVendorMap.put("blinkit", "Shopping");
+        localVendorMap.put("amazon", "Shopping");
         localVendorMap.put("uber", "Transport");
-        keywordClusters.put("Food", Arrays.asList("coffee", "tea", "pizza", "rice", "burger", "boba"));
-        keywordClusters.put("Transport", Arrays.asList("petrol", "fuel", "bus", "metro", "parking"));
+        localVendorMap.put("ola", "Transport");
+
+        keywordClusters.put("Food",
+                Arrays.asList("coffee", "tea", "pizza", "burger", "dinner", "lunch"));
+
+        keywordClusters.put("Transport",
+                Arrays.asList("petrol", "fuel", "bus", "metro", "auto", "cab"));
+
+        // ✅ Makeup belongs to Shopping
+        keywordClusters.put("Shopping",
+                Arrays.asList(
+                        "clothes", "shoes", "mall", "grocery", "gift",
+                        "makeup", "lipstick", "cosmetics", "skincare"
+                ));
+
+        keywordClusters.put("Health",
+                Arrays.asList("doctor", "medicine", "gym", "hospital"));
+
+        keywordClusters.put("Bills",
+                Arrays.asList("electricity", "rent", "recharge", "wifi", "gas"));
     }
+
+    /* -------------------- CORE FLOW -------------------- */
 
     private void startSmartCategorization() {
         String input = etSmartInput.getText().toString().trim();
         if (input.isEmpty()) return;
 
-        double localAmount = extractAmount(input);
-        String localCategory = autoCategorize(input.toLowerCase());
+        double amount = extractAmount(input);
+        String category = autoCategorize(input);
 
-        if (!localCategory.equals("Other") && localAmount > 0) {
-            saveExpense(localAmount, localCategory, input);
+        if (!category.equals("Other") && amount > 0) {
+            saveExpense(amount, category, input);
         } else {
-            callGeminiAI(input, localAmount);
+            callGeminiAI(input, amount);
         }
     }
 
-    private void callGeminiAI(String input, double localAmount) {
+    /* -------------------- GEMINI CALL -------------------- */
+
+    private void callGeminiAI(String input, double fallbackAmount) {
         progressBar.setVisibility(View.VISIBLE);
         btnSave.setEnabled(false);
 
-        String prompt = "Extract data from: '" + input + "'. " +
-                "You MUST categorize this into one of these exact words: " +
-                "Food, Transport, Bills, Shopping, Health, Entertainment, or Personal. " + // Added Health and Personal
-                "Return ONLY JSON: {\"amount\": 0.0, \"category\": \"\", \"note\": \"\"}";
+        OkHttpClient client = new OkHttpClient();
 
-        Content content = new Content.Builder().addText(prompt).build();
-        ListenableFuture<GenerateContentResponse> response = model.generateContent(content);
+        try {
+            JSONObject payload = new JSONObject();
 
-        Futures.addCallback(response, new FutureCallback<GenerateContentResponse>() {
-            @Override
-            public void onSuccess(GenerateContentResponse result) {
-                runOnUiThread(() -> {
-                    try {
-                        String jsonStr = result.getText().replace("```json", "").replace("```", "").trim();
-                        JSONObject json = new JSONObject(jsonStr);
+            String prompt =
+                    "You are an expense classification system.\n\n" +
+                            "Choose EXACTLY ONE category from this list:\n" +
+                            "- Food\n" +
+                            "- Transport\n" +
+                            "- Shopping\n" +
+                            "- Health\n" +
+                            "- Bills\n" +
+                            "- Entertainment\n" +
+                            "- Other\n\n" +
+                            "Examples:\n" +
+                            "pizza, burger, coffee → Food\n" +
+                            "uber, petrol → Transport\n" +
+                            "clothes, shoes, makeup, lipstick → Shopping\n" +
+                            "doctor visit, medicine → Health\n" +
+                            "electricity bill, rent → Bills\n\n" +
+                            "Expense: \"" + input + "\"\n\n" +
+                            "Return ONLY JSON:\n" +
+                            "{ \"amount\": number, \"category\": string }";
 
-                        double aiAmount = json.optDouble("amount", localAmount);
-                        String aiCategory = json.optString("category", "Other");
-                        String aiNote = json.optString("note", input);
+            payload.put("prompt", prompt);
 
-                        saveExpense(aiAmount, aiCategory, aiNote);
+            RequestBody body = RequestBody.create(
+                    payload.toString(),
+                    MediaType.parse("application/json")
+            );
 
-                    } catch (Exception e) {
-                        saveExpense(localAmount, "Other", input);
-                    } finally {
-                        progressBar.setVisibility(View.GONE);
-                    }
-                });
-            }
+            Request request = new Request.Builder()
+                    .url("https://geminirequest-vludjrerya-uc.a.run.app")
+                    .post(body)
+                    .build();
 
-            @Override
-            public void onFailure(Throwable t) {
-                runOnUiThread(() -> {
-                    progressBar.setVisibility(View.GONE);
-                    btnSave.setEnabled(true);
-                    Toast.makeText(AddExpenseActivity.this, "AI Offline. Saving locally.", Toast.LENGTH_SHORT).show();
-                    saveExpense(localAmount, "Other", input);
-                });
-            }
-            // FIX: ContextCompat ensures this works on API 24+ without crashing
-        }, ContextCompat.getMainExecutor(this));
+            client.newCall(request).enqueue(new Callback() {
+
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                    runOnUiThread(() -> fallbackSave(input, fallbackAmount));
+                }
+
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                    String raw = response.body() != null ? response.body().string() : "";
+                    Log.d("Gemini_Raw", raw);
+
+                    runOnUiThread(() -> {
+                        try {
+                            JSONObject json = new JSONObject(raw);
+                            double amount = json.optDouble("amount", fallbackAmount);
+                            String category = normalizeCategory(json.optString("category"));
+                            saveExpense(amount, category, input);
+                        } catch (Exception e) {
+                            fallbackSave(input, fallbackAmount);
+                        } finally {
+                            progressBar.setVisibility(View.GONE);
+                            btnSave.setEnabled(true);
+                        }
+                    });
+                }
+            });
+
+        } catch (Exception e) {
+            fallbackSave(input, fallbackAmount);
+            progressBar.setVisibility(View.GONE);
+            btnSave.setEnabled(true);
+        }
     }
+
+    private void fallbackSave(String input, double amount) {
+        saveExpense(amount, "Other", input);
+    }
+
+    /* -------------------- HELPERS -------------------- */
 
     private double extractAmount(String input) {
         Matcher m = Pattern.compile("(\\d+(\\.\\d+)?)").matcher(input);
         return m.find() ? Double.parseDouble(m.group(1)) : 0;
     }
 
-    private String autoCategorize(String note) {
+    private String autoCategorize(String input) {
+        String text = input.toLowerCase();
+
         for (String vendor : localVendorMap.keySet()) {
-            if (note.contains(vendor)) return localVendorMap.get(vendor);
+            if (text.contains(vendor)) return localVendorMap.get(vendor);
         }
+
         for (Map.Entry<String, List<String>> entry : keywordClusters.entrySet()) {
-            for (String keyword : entry.getValue()) {
-                if (note.contains(keyword)) return entry.getKey();
+            for (String word : entry.getValue()) {
+                if (text.contains(word)) return entry.getKey();
             }
         }
+
+        SharedPreferences prefs = getSharedPreferences("AI_Learning", MODE_PRIVATE);
+        for (Map.Entry<String, ?> e : prefs.getAll().entrySet()) {
+            if (text.contains(e.getKey())) return (String) e.getValue();
+        }
+
         return "Other";
     }
 
+    private String normalizeCategory(String cat) {
+        if (cat == null) return "Other";
+
+        switch (cat.toLowerCase().trim()) {
+            case "food": return "Food";
+            case "transport": return "Transport";
+            case "shopping": return "Shopping";
+            case "health": return "Health";
+            case "bills": return "Bills";
+            case "entertainment": return "Entertainment";
+            default: return "Other";
+        }
+    }
+
+    /* -------------------- FIREBASE -------------------- */
+
     private void saveExpense(double amount, String category, String note) {
-        String userId = mAuth.getCurrentUser().getUid();
+        if (mAuth.getCurrentUser() == null) return;
+
         Map<String, Object> data = new HashMap<>();
         data.put("amount", amount);
-        data.put("note", note);
         data.put("category", category);
+        data.put("note", note);
         data.put("timestamp", Timestamp.now());
 
-        db.collection("Users").document(userId).collection("Expenses").add(data)
+        db.collection("Users")
+                .document(mAuth.getCurrentUser().getUid())
+                .collection("Expenses")
+                .add(data)
                 .addOnSuccessListener(doc -> {
-                    Toast.makeText(this, "Smart Added: " + category, Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this,
+                            "Saved to " + category,
+                            Toast.LENGTH_SHORT).show();
                     finish();
-                });
+                })
+                .addOnFailureListener(e ->
+                        Toast.makeText(this,
+                                "Save failed",
+                                Toast.LENGTH_SHORT).show());
     }
 }

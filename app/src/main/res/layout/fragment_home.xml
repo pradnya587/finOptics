@@ -4,140 +4,266 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FB"> <androidx.core.widget.NestedScrollView
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:background="#0B1220">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp">
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvUserGreeting"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Hello, Prakash"
-                    android:textSize="22sp"
-                    android:textStyle="bold"
-                    android:textColor="#1A1A1A" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome back!"
-                    android:textSize="14sp"
-                    android:textColor="#9E9E9E" />
-            </LinearLayout>
-
-            <ImageButton
-                android:id="@+id/btnLogout"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_alignParentEnd="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_lock_power_off"
-                app:tint="#FF5252" />
-        </RelativeLayout>
-
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@android:color/white">
-
-            <LinearLayout
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:padding="32dp">
+                android:layout_marginBottom="32dp">
 
-                <FrameLayout
-                    android:layout_width="200dp"
-                    android:layout_height="200dp">
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
 
-                    <ProgressBar
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:progressDrawable="@drawable/circular_bg"
-                        android:progress="100" />
+                    <ImageButton
+                        android:id="@+id/btnLogout"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/ic_logout"
+                        android:contentDescription="Logout"
+                        android:scaleType="centerInside"/>
 
-                    <ProgressBar
-                        android:id="@+id/circularProgressBar"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:progressDrawable="@drawable/circular_progress" />
-
-                    <LinearLayout
+                    <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:gravity="center"
-                        android:orientation="vertical">
+                        android:text="Good evening,"
+                        android:textColor="#8FA3BF"
+                        android:textSize="14sp"/>
 
-                        <TextView
-                            android:id="@+id/tvSpentValue"
+                    <TextView
+                        android:id="@+id/tvUserGreeting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Welcome back 👋"
+                        android:textColor="#FFFFFF"
+                        android:textSize="22sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_alignParentEnd="true"
+                    android:gravity="center"
+                    android:text="A"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:background="@drawable/avatar_circle"/>
+            </RelativeLayout>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="28dp"
+                app:cardBackgroundColor="#111A2C"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="32dp">
+
+                    <FrameLayout
+                        android:layout_width="220dp"
+                        android:layout_height="220dp">
+
+                        <ProgressBar
+                            android:layout_width="200dp"
+                            android:layout_height="200dp"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:progress="100"
+                            android:progressDrawable="@drawable/circular_bg"/>
+
+                        <ProgressBar
+                            android:id="@+id/circularProgressBar"
+                            android:layout_width="200dp"
+                            android:layout_height="200dp"
+                            style="?android:attr/progressBarStyleHorizontal"
+                            android:progress="0"
+                            android:progressDrawable="@drawable/circular_progress"/>
+
+                        <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="₹4,500"
-                            android:textSize="36sp"
-                            android:textStyle="bold"
-                            android:textColor="#1A1A1A" />
+                            android:layout_gravity="center"
+                            android:orientation="vertical"
+                            android:gravity="center">
 
-                        <TextView
-                            android:id="@+id/tvTotalBudgetLabel"
-                            android:layout_width="wrap_content"
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Spent this month"
+                                android:textColor="#8FA3BF"
+                                android:textSize="14sp"/>
+
+                            <TextView
+                                android:id="@+id/tvSpentValue"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="₹0"
+                                android:textColor="#FFFFFF"
+                                android:textSize="36sp"
+                                android:textStyle="bold"/>
+
+                            <TextView
+                                android:id="@+id/tvTotalBudgetLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="₹0 remaining"
+                                android:textColor="#22D3A6"
+                                android:textSize="14sp"/>
+                        </LinearLayout>
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="24dp"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="of ₹12,000 budget"
-                            android:textSize="15sp"
-                            android:textColor="#9E9E9E" />
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="BUDGET"
+                                android:textColor="#8FA3BF"
+                                android:textSize="12sp"/>
+
+                            <TextView
+                                android:id="@+id/tvBudgetAmount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="₹0"
+                                android:textColor="#FFFFFF"
+                                android:textStyle="bold"/>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="1dp"
+                            android:layout_height="32dp"
+                            android:background="#1E293B"/>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="USED"
+                                android:textColor="#8FA3BF"
+                                android:textSize="12sp"/>
+
+                            <TextView
+                                android:id="@+id/tvUsedPercent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0%"
+                                android:textColor="#22D3A6"
+                                android:textStyle="bold"/>
+                        </LinearLayout>
                     </LinearLayout>
-                </FrameLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
-            android:text="Recent Activity"
-            android:textStyle="bold"
-            android:textSize="18sp"
-            android:textColor="#1A1A1A" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="20dp"
+                app:cardBackgroundColor="#111A2C"
+                app:cardElevation="0dp">
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            app:cardCornerRadius="20dp"
-            app:cardElevation="0dp">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="20dp"
+                    android:orientation="vertical">
+
+                    <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Today's spending"
+                            android:textColor="#FFFFFF"
+                            android:textStyle="bold"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_alignParentEnd="true"
+                            android:text="On track"
+                            android:textColor="#22D3A6"/>
+                    </RelativeLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Daily limit ₹500"
+                        android:textColor="#8FA3BF"
+                        android:textSize="12sp"/>
+
+                    <ProgressBar
+                        android:id="@+id/progressTodayBar"
+                        android:layout_width="match_parent"
+                        android:layout_height="6dp"
+                        android:layout_marginTop="12dp"
+                        style="?android:attr/progressBarStyleHorizontal"
+                        android:progress="0"
+                        android:progressDrawable="@drawable/progress_today"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:gravity="center"
-                android:text="No transactions yet"
-                android:textColor="#BDBDBD"
-                android:background="#FFFFFF"/>
-        </androidx.cardview.widget.CardView>
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Recent Transactions"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold"
+                android:textSize="18sp"
+                android:layout_marginTop="32dp"/>
 
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvRecentTransactions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddExpense"
@@ -145,11 +271,10 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="24dp"
-        app:srcCompat="@android:drawable/ic_input_add"
-        app:backgroundTint="#00D2B4"
+        app:srcCompat="@drawable/ic_add"
+        app:backgroundTint="#22D3A6"
         app:tint="@android:color/white"
-        app:fabSize="normal"
-        app:elevation="8dp"
+        app:elevation="10dp"
         app:borderWidth="0dp"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
