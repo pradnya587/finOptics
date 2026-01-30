@@ -3,7 +3,6 @@ package com.example.finoptics;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -14,12 +13,17 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.firebase.Timestamp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
 
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +50,11 @@ public class AddExpenseActivity extends AppCompatActivity {
     private final Map<String, String> localVendorMap = new HashMap<>();
     private final Map<String, List<String>> keywordClusters = new HashMap<>();
 
+
+
     private static final String TAG = "FinOptics_Gemini";
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +73,7 @@ public class AddExpenseActivity extends AppCompatActivity {
         btnSave.setOnClickListener(v -> startSmartCategorization());
     }
 
-    /* -------------------- LOCAL DATA -------------------- */
+    /* -------------------- LOCAL DATA (PRESERVED) -------------------- */
 
     private void initLocalData() {
         localVendorMap.put("zomato", "Food");
@@ -82,7 +90,6 @@ public class AddExpenseActivity extends AppCompatActivity {
         keywordClusters.put("Transport",
                 Arrays.asList("petrol", "fuel", "bus", "metro", "auto", "cab"));
 
-        // ✅ Makeup belongs to Shopping
         keywordClusters.put("Shopping",
                 Arrays.asList(
                         "clothes", "shoes", "mall", "grocery", "gift",
@@ -96,7 +103,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                 Arrays.asList("electricity", "rent", "recharge", "wifi", "gas"));
     }
 
-    /* -------------------- CORE FLOW -------------------- */
+    /* -------------------- CORE FLOW (PRESERVED) -------------------- */
 
     private void startSmartCategorization() {
         String input = etSmartInput.getText().toString().trim();
@@ -112,10 +119,10 @@ public class AddExpenseActivity extends AppCompatActivity {
         }
     }
 
-    /* -------------------- GEMINI CALL -------------------- */
+    /* -------------------- GEMINI CALL (PRESERVED) -------------------- */
 
     private void callGeminiAI(String input, double fallbackAmount) {
-        progressBar.setVisibility(View.VISIBLE);
+        progressBar.setVisibility(android.view.View.VISIBLE);
         btnSave.setEnabled(false);
 
         OkHttpClient client = new OkHttpClient();
@@ -176,7 +183,7 @@ public class AddExpenseActivity extends AppCompatActivity {
                         } catch (Exception e) {
                             fallbackSave(input, fallbackAmount);
                         } finally {
-                            progressBar.setVisibility(View.GONE);
+                            progressBar.setVisibility(android.view.View.GONE);
                             btnSave.setEnabled(true);
                         }
                     });
@@ -185,7 +192,7 @@ public class AddExpenseActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             fallbackSave(input, fallbackAmount);
-            progressBar.setVisibility(View.GONE);
+            progressBar.setVisibility(android.view.View.GONE);
             btnSave.setEnabled(true);
         }
     }
@@ -194,7 +201,7 @@ public class AddExpenseActivity extends AppCompatActivity {
         saveExpense(amount, "Other", input);
     }
 
-    /* -------------------- HELPERS -------------------- */
+    /* -------------------- HELPERS (PRESERVED) -------------------- */
 
     private double extractAmount(String input) {
         Matcher m = Pattern.compile("(\\d+(\\.\\d+)?)").matcher(input);
@@ -236,7 +243,7 @@ public class AddExpenseActivity extends AppCompatActivity {
         }
     }
 
-    /* -------------------- FIREBASE -------------------- */
+    /* -------------------- FIREBASE (PRESERVED) -------------------- */
 
     private void saveExpense(double amount, String category, String note) {
         if (mAuth.getCurrentUser() == null) return;
@@ -255,6 +262,9 @@ public class AddExpenseActivity extends AppCompatActivity {
                     Toast.makeText(this,
                             "Saved to " + category,
                             Toast.LENGTH_SHORT).show();
+
+                    detectTopAnomaly(amount, category);
+
                     finish();
                 })
                 .addOnFailureListener(e ->
@@ -262,4 +272,138 @@ public class AddExpenseActivity extends AppCompatActivity {
                                 "Save failed",
                                 Toast.LENGTH_SHORT).show());
     }
+
+
+
+    /* -------------------- CORRECTED ANOMALY DETECTION -------------------- */
+
+    private void detectTopAnomaly(double amount, String category) {
+
+        if (mAuth.getCurrentUser() == null) return;
+
+        String uid = mAuth.getCurrentUser().getUid();
+
+        final double expenseAmount = amount;
+        final String expenseCategory = category;
+
+        DocumentReference statsRef = db.collection("Users")
+                .document(uid)
+                .collection("Stats")
+                .document("baseline");
+
+        DocumentReference alertRef = db.collection("Users")
+                .document(uid)
+                .collection("Alerts")
+                .document(category);
+
+        statsRef.get().addOnSuccessListener(snapshot -> {
+
+            if (!snapshot.exists()) {
+                Log.w(TAG, "Baseline stats missing");
+                return;
+            }
+
+            Map<String, Object> catAvg =
+                    (Map<String, Object>) snapshot.get("categoryAverages");
+
+            if (catAvg == null || !catAvg.containsKey(category)) {
+                Log.w(TAG, "No avg found for category: " + category);
+                return;
+            }
+
+            double avg = ((Number) catAvg.get(category)).doubleValue();
+
+            // SAME threshold logic (unchanged)
+            double amountThreshold = Math.max(avg * 1.3, avg + 100);
+
+            // Start of today timestamp (unchanged)
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.HOUR_OF_DAY, 0);
+            cal.set(Calendar.MINUTE, 0);
+            cal.set(Calendar.SECOND, 0);
+            cal.set(Calendar.MILLISECOND, 0);
+            Timestamp startOfToday = new Timestamp(cal.getTime());
+
+            db.collection("Users")
+                    .document(uid)
+                    .collection("Expenses")
+                    .whereEqualTo("category", category)
+                    .whereGreaterThanOrEqualTo("timestamp", startOfToday)
+                    .get()
+                    .addOnSuccessListener(expensesSnapshot -> {
+
+                        int todayCount = expensesSnapshot.size();
+                        boolean isFrequencySpike = todayCount >= 5;
+
+                        // 🔹 NEW: calculate TODAY TOTAL
+                        double todayTotal = 0.0;
+                        for (QueryDocumentSnapshot doc : expensesSnapshot) {
+                            Double amt = doc.getDouble("amount");
+                            if (amt != null) todayTotal += amt;
+                        }
+
+                        // 🔹 FIXED amount spike logic
+                        boolean isAmountSpike = todayTotal >= amountThreshold;
+
+                        if (!isAmountSpike && !isFrequencySpike) {
+                            Log.d(TAG, "No anomaly detected for " + category);
+                            return;
+                        }
+
+                        double finalTodayTotal = todayTotal;
+                        alertRef.get().addOnSuccessListener(alertSnap -> {
+
+                            // --- START OF RESET LOGIC FIX ---
+                            boolean isOldAlertFromToday = false;
+                            if (alertSnap.exists()) {
+                                Timestamp lastAlertTimestamp = alertSnap.getTimestamp("timestamp");
+                                if (lastAlertTimestamp != null) {
+                                    Calendar calAlert = Calendar.getInstance();
+                                    calAlert.setTime(lastAlertTimestamp.toDate());
+
+                                    Calendar calNow = Calendar.getInstance();
+
+                                    isOldAlertFromToday = (calAlert.get(Calendar.YEAR) == calNow.get(Calendar.YEAR) &&
+                                            calAlert.get(Calendar.DAY_OF_YEAR) == calNow.get(Calendar.DAY_OF_YEAR));
+                                }
+                            }
+
+                            // Only fetch previous values if the alert found in DB is actually from TODAY
+                            double prevAmount = (alertSnap.exists() && isOldAlertFromToday && alertSnap.contains("amount"))
+                                    ? alertSnap.getDouble("amount") : 0;
+
+                            int prevCount = (alertSnap.exists() && isOldAlertFromToday && alertSnap.contains("count"))
+                                    ? alertSnap.getLong("count").intValue() : 0;
+                            // --- END OF RESET LOGIC FIX ---
+
+                            // SAME comparison logic, but with todayTotal
+                            // If it's a new day, prevAmount/prevCount are 0, so this check passes and updates.
+                            if (finalTodayTotal <= prevAmount && todayCount <= prevCount) return;
+
+                            Map<String, Object> alertData = new HashMap<>();
+                            alertData.put("type",
+                                    isAmountSpike ? "Amount Spike" : "Frequency Spike");
+                            alertData.put("category", category);
+
+                            // 🔹 FIX: store TOTAL, not single expense
+                            alertData.put("amount", finalTodayTotal);
+
+                            alertData.put("count", todayCount);
+                            alertData.put("timestamp", Timestamp.now());
+
+                            alertRef.set(alertData)
+                                    .addOnSuccessListener(v ->
+                                            Log.d(TAG, "🚨 Alert written for " + category))
+                                    .addOnFailureListener(e ->
+                                            Log.e(TAG, "Alert write failed", e));
+                        });
+                    })
+                    .addOnFailureListener(e ->
+                            Log.e(TAG, "Expense query failed", e));
+        }).addOnFailureListener(e ->
+                Log.e(TAG, "Stats fetch failed", e));
+    }
+
+
+
 }

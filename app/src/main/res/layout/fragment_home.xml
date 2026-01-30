@@ -17,6 +17,7 @@
             android:orientation="vertical"
             android:padding="24dp">
 
+            <!-- User Greeting Section -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -31,11 +32,11 @@
                         android:id="@+id/btnLogout"
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:layout_alignParentEnd="true"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/ic_logout"
+                        android:layout_marginStart="-8dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_logout"
                         android:contentDescription="Logout"
-                        android:scaleType="centerInside"/>
+                        app:tint="#8FA3BF"/>
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -65,6 +66,7 @@
                     android:background="@drawable/avatar_circle"/>
             </RelativeLayout>
 
+            <!-- Monthly Spending Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -88,6 +90,7 @@
                             android:layout_height="200dp"
                             style="?android:attr/progressBarStyleHorizontal"
                             android:progress="100"
+                            android:layout_gravity="center"
                             android:progressDrawable="@drawable/circular_bg"/>
 
                         <ProgressBar
@@ -96,6 +99,7 @@
                             android:layout_height="200dp"
                             style="?android:attr/progressBarStyleHorizontal"
                             android:progress="0"
+                            android:layout_gravity="center"
                             android:progressDrawable="@drawable/circular_progress"/>
 
                         <LinearLayout
@@ -192,6 +196,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- Today's Spending Card -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -243,16 +248,71 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <TextView
-                android:layout_width="wrap_content"
+            <!-- 🔹 TOP ALERT SECTION -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Recent Transactions"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:textSize="18sp"
-                android:layout_marginTop="32dp"/>
+                android:layout_marginTop="24dp"
+                app:cardCornerRadius="20dp"
+                app:cardBackgroundColor="#111A2C"
+                app:cardElevation="0dp"
+                android:id="@+id/cardTopAlert"
+                android:visibility="gone">
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
+                    <TextView
+                        android:id="@+id/tvAlertTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚠️ Alert"
+                        android:textColor="#F87171"
+                        android:textStyle="bold"
+                        android:textSize="16sp"/>
+
+                    <TextView
+                        android:id="@+id/tvAlertMessage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="High spending detected in Food today!"
+                        android:textColor="#FFFFFF"
+                        android:layout_marginTop="4dp"
+                        android:textSize="14sp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Recent Transactions Header -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Recent Transactions"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="18sp"/>
+
+                <TextView
+                    android:id="@+id/tvViewAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:text="View All"
+                    android:textColor="#22D3A6"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:padding="4dp"
+                    android:background="?attr/selectableItemBackground"/>
+            </RelativeLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvRecentTransactions"
@@ -261,10 +321,14 @@
                 android:nestedScrollingEnabled="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="80dp"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <!-- FAB Add Expense -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabAddExpense"
         android:layout_width="wrap_content"

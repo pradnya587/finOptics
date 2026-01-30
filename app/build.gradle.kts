@@ -1,7 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+val localProperties = Properties().apply {
+    load(FileInputStream(rootProject.file("local.properties")))
+}
+
+val GEMINI_API_KEY: String = localProperties.getProperty("GEMINI_API_KEY")
+
+
 plugins {
     // 1. DUPLICATE PLUGIN REMOVED
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
+
+
 }
 
 android {
@@ -16,7 +28,17 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "GEMINI_API_KEY", "\"AIzaSyD9gT5c3w2SbH3u1QkuGdRBsvbof_vyZ0k\"")
+
+
+        // ✅ Enable BuildConfig generation
+        buildFeatures {
+            buildConfig = true
+        }
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
     }
 
     buildTypes {
@@ -61,4 +83,13 @@ dependencies {
 
     implementation("com.google.ai.client.generativeai:generativeai:0.7.0")
     implementation("com.google.guava:guava:31.1-android")
+
+
+    // Gemini REST API networking
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+
+
+    // JSON handling (already present usually)
+    implementation("org.json:json:20240303")
 }

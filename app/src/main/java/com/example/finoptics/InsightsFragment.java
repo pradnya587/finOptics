@@ -1,64 +1,316 @@
 package com.example.finoptics;
 
+import android.animation.ObjectAnimator;
 import android.os.Bundle;
-
-import androidx.fragment.app.Fragment;
-
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link InsightsFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.firebase.Timestamp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONObject;
+import okhttp3.*;
+import java.io.IOException;
+
+
 public class InsightsFragment extends Fragment {
 
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private FirebaseFirestore db;
+    private String userId;
 
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private MaterialButtonToggleGroup toggleTimeFilter;
+    private boolean isLast3Months = false;
 
-    public InsightsFragment() {
-        // Required empty public constructor
-    }
+    private LinearLayout layoutCategoryBars;
+    private TextView tvTopCategoryName, tvTopCategoryAmount;
+    private TextView tvAiInsight, tvAiLoading;
+    private ImageView imgTopCategory;
+    private MaterialButton btnGenerateAiInsight;
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment InsightsFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static InsightsFragment newInstance(String param1, String param2) {
-        InsightsFragment fragment = new InsightsFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
+    private final Map<Boolean, Map<String, Double>> cache = new HashMap<>();
 
+    @Nullable
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.fragment_insights, container, false);
+
+        db = FirebaseFirestore.getInstance();
+        userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+
+        bindViews(view);
+        setupTimeToggle();
+        setupAiButton();
+
+        loadInsights(); // default = this month
+        return view;
+    }
+
+    private void bindViews(View view) {
+        toggleTimeFilter = view.findViewById(R.id.toggleTimeFilter);
+        layoutCategoryBars = view.findViewById(R.id.layoutCategoryBars);
+
+        tvTopCategoryName = view.findViewById(R.id.tvTopCategoryName);
+        tvTopCategoryAmount = view.findViewById(R.id.tvTopCategoryAmount);
+        imgTopCategory = view.findViewById(R.id.imgTopCategory);
+
+        tvAiInsight = view.findViewById(R.id.tvAiInsight);
+        tvAiLoading = view.findViewById(R.id.tvAiLoading);
+        btnGenerateAiInsight = view.findViewById(R.id.btnGenerateAiInsight);
+    }
+
+    private void setupTimeToggle() {
+        toggleTimeFilter.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) return;
+            isLast3Months = checkedId == R.id.btnLast3Months;
+            loadInsights();
+        });
+    }
+
+    private void loadInsights() {
+        layoutCategoryBars.removeAllViews();
+        tvAiInsight.setVisibility(View.GONE);
+
+        if (cache.containsKey(isLast3Months)) {
+            renderAll(cache.get(isLast3Months));
+            return;
+        }
+
+        Timestamp startTimestamp = getStartTimestamp();
+        Log.d("INSIGHTS_DEBUG", "Query startTimestamp: " + startTimestamp.toDate());
+
+        db.collection("Users")
+                .document(userId)
+                .collection("Expenses")
+                .get()
+                .addOnSuccessListener(snapshot -> {
+                    Log.d("INSIGHTS_DEBUG", "Total documents fetched: " + snapshot.size());
+
+                    Map<String, Double> categoryTotals = new HashMap<>();
+
+                    for (QueryDocumentSnapshot doc : snapshot) {
+                        // Print each document for debugging
+                        Log.d("INSIGHTS_DEBUG", "Doc ID: " + doc.getId() + " Data: " + doc.getData());
+
+                        String category = doc.getString("category");
+
+                        // Try both amount field types
+                        Double amount = doc.getDouble("amount");
+                        if (amount == null) {
+                            Object amtObj = doc.get("amount");
+                            if (amtObj instanceof Long) amount = ((Long) amtObj).doubleValue();
+                            else if (amtObj instanceof Double) amount = (Double) amtObj;
+                        }
+
+                        // Try both timestamp types
+                        Timestamp ts = doc.getTimestamp("timestamp");
+                        long tsMillis = 0;
+                        if (ts != null) tsMillis = ts.toDate().getTime();
+                        else {
+                            Object tObj = doc.get("timestamp");
+                            if (tObj instanceof Long) tsMillis = (Long) tObj;
+                        }
+
+                        if (category == null || amount == null) continue;
+
+                        // Only include if after startTimestamp
+                        if (tsMillis < startTimestamp.toDate().getTime()) continue;
+
+                        categoryTotals.put(
+                                category,
+                                categoryTotals.getOrDefault(category, 0.0) + amount
+                        );
+                    }
+
+                    cache.put(isLast3Months, categoryTotals);
+                    renderAll(categoryTotals);
+                })
+                .addOnFailureListener(e -> Log.e("INSIGHTS", "Firestore error", e));
+    }
+
+    private void renderAll(Map<String, Double> categoryTotals) {
+        if (categoryTotals.isEmpty()) {
+            tvTopCategoryName.setText("No data");
+            tvTopCategoryAmount.setText("₹0");
+            imgTopCategory.setImageResource(R.drawable.ic_general);
+            return;
+        }
+        renderTopCategory(categoryTotals);
+        renderCategoryBreakdown(categoryTotals);
+    }
+
+    private void renderCategoryBreakdown(Map<String, Double> categoryTotals) {
+        layoutCategoryBars.removeAllViews();
+        double maxValue = Collections.max(categoryTotals.values());
+
+        List<Map.Entry<String, Double>> sorted = new ArrayList<>(categoryTotals.entrySet());
+        Collections.sort(sorted, (a, b) -> Double.compare(b.getValue(), a.getValue()));
+
+        LayoutInflater inflater = LayoutInflater.from(getContext());
+
+        for (Map.Entry<String, Double> entry : sorted) {
+            View row = inflater.inflate(R.layout.item_category_bar, layoutCategoryBars, false);
+
+            TextView tvCategory = row.findViewById(R.id.tvCategoryName);
+            TextView tvAmount = row.findViewById(R.id.tvCategoryAmount);
+            ProgressBar progressBar = row.findViewById(R.id.progressCategory);
+
+            tvCategory.setText(entry.getKey());
+            tvAmount.setText("₹" + Math.round(entry.getValue()));
+
+            int percent = (int) ((entry.getValue() / maxValue) * 100);
+            progressBar.setMax(100);
+
+            ObjectAnimator.ofInt(progressBar, "progress", 0, percent)
+                    .setDuration(600)
+                    .start();
+
+            layoutCategoryBars.addView(row);
         }
     }
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_insights, container, false);
+    private void renderTopCategory(Map<String, Double> categoryTotals) {
+        String topCategory = null;
+        double maxAmount = 0;
+
+        for (Map.Entry<String, Double> entry : categoryTotals.entrySet()) {
+            if (entry.getValue() > maxAmount) {
+                maxAmount = entry.getValue();
+                topCategory = entry.getKey();
+            }
+        }
+
+        if (topCategory == null) return;
+
+        tvTopCategoryName.setText(topCategory);
+        tvTopCategoryAmount.setText("₹" + Math.round(maxAmount));
+        imgTopCategory.setImageResource(getCategoryIcon(topCategory));
+    }
+
+    private void setupAiButton() {
+        btnGenerateAiInsight.setOnClickListener(v -> {
+
+            Map<String, Double> data = cache.get(isLast3Months);
+            if (data == null || data.isEmpty()) {
+                tvAiInsight.setText("Not enough data to generate insights.");
+                tvAiInsight.setVisibility(View.VISIBLE);
+                return;
+            }
+
+            tvAiInsight.setVisibility(View.GONE);
+            tvAiLoading.setVisibility(View.VISIBLE);
+
+            // 1️⃣ Build prompt
+            StringBuilder prompt = new StringBuilder();
+            for (Map.Entry<String, Double> e : data.entrySet()) {
+                prompt.append(e.getKey())
+                        .append(": ")
+                        .append(Math.round(e.getValue()))
+                        .append("\n");
+            }
+
+            // 2️⃣ Call Firebase Function
+            OkHttpClient client = new OkHttpClient();
+
+            JSONObject json = new JSONObject();
+            try {
+                json.put("prompt", prompt.toString());
+            } catch (Exception ignored) {}
+
+            RequestBody body = RequestBody.create(
+                    json.toString(),
+                    MediaType.parse("application/json")
+            );
+
+            Request request = new Request.Builder()
+                    .url("https://us-central1-finoptics-79357.cloudfunctions.net/getAiInsight")
+                    .post(body)
+                    .build();
+
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                    requireActivity().runOnUiThread(() -> {
+                        tvAiLoading.setVisibility(View.GONE);
+                        tvAiInsight.setVisibility(View.VISIBLE);
+                        tvAiInsight.setText("Failed to generate insight.");
+                    });
+                }
+
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                    String res = response.body().string();
+                    try {
+                        JSONObject obj = new JSONObject(res);
+                        String reply = obj.getString("reply");
+
+                        requireActivity().runOnUiThread(() -> {
+                            tvAiLoading.setVisibility(View.GONE);
+                            tvAiInsight.setVisibility(View.VISIBLE);
+                            tvAiInsight.setText(reply);
+                        });
+
+                    } catch (Exception e) {
+                        requireActivity().runOnUiThread(() -> {
+                            tvAiLoading.setVisibility(View.GONE);
+                            tvAiInsight.setVisibility(View.VISIBLE);
+                            tvAiInsight.setText("AI returned an invalid response.");
+                        });
+                    }
+                }
+            });
+        });
+    }
+
+
+    private Timestamp getStartTimestamp() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+
+        if (isLast3Months) cal.add(Calendar.MONTH, -3);
+        else cal.set(Calendar.DAY_OF_MONTH, 1);
+
+        return new Timestamp(cal.getTime());
+    }
+
+    private int getCategoryIcon(String category) {
+        if (category == null) return R.drawable.ic_general;
+        switch (category.toLowerCase()) {
+            case "food": return R.drawable.ic_food;
+            case "shopping": return R.drawable.ic_shopping;
+            case "travel":
+            case "transport": return R.drawable.ic_transport;
+            case "entertainment": return R.drawable.ic_entertainment;
+            case "health":
+            case "medical": return R.drawable.ic_health;
+            default: return R.drawable.ic_general;
+        }
     }
 }
