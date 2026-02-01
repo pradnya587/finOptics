@@ -85,6 +85,9 @@ public class HomeFragment extends Fragment {
         progressTodayBar = view.findViewById(R.id.progressTodayBar);
         fabAddExpense = view.findViewById(R.id.fabAddExpense);
 
+        circularProgressBar.setMax(100); // FIX: ensure % works correctly
+
+
         // ALERT UI
         cardTopAlert = view.findViewById(R.id.cardTopAlert);
         tvAlertTitle = view.findViewById(R.id.tvAlertTitle);
@@ -315,7 +318,8 @@ public class HomeFragment extends Fragment {
                 tvTotalBudgetLabel.setTextColor(android.graphics.Color.parseColor("#80FFFFFF")); // Your original faded white
             }
 
-            int percent = (int) ((spent / monthlyBudget) * 100);
+            int percent = (int) Math.ceil((spent / monthlyBudget) * 100); // FIX
+
             circularProgressBar.setProgress(Math.min(percent, 100));
             tvUsedPercent.setText(percent + "%");
 

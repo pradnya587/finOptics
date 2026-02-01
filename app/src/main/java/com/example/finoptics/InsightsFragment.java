@@ -51,6 +51,10 @@ public class InsightsFragment extends Fragment {
 
     private androidx.cardview.widget.CardView cardAiInsight;
 
+    private androidx.cardview.widget.CardView cardMonthlyReward;
+    private ImageView imgRewardMedal;
+    private TextView tvRewardTitle, tvTotalSpentLabel;
+
     private final Map<Boolean, Map<String, Double>> cache = new HashMap<>();
 
     @Nullable
@@ -85,6 +89,11 @@ public class InsightsFragment extends Fragment {
         btnGenerateAiInsight = view.findViewById(R.id.btnGenerateAiInsight);
 
         cardAiInsight = view.findViewById(R.id.cardAiInsight);
+
+        cardMonthlyReward = view.findViewById(R.id.cardMonthlyReward);
+        imgRewardMedal = view.findViewById(R.id.imgRewardMedal);
+        tvRewardTitle = view.findViewById(R.id.tvRewardTitle);
+        tvTotalSpentLabel = view.findViewById(R.id.tvTotalSpentLabel);
 
 
     }
@@ -187,16 +196,63 @@ public class InsightsFragment extends Fragment {
     }
 
     private void renderAll(Map<String, Double> categoryTotals) {
+        // 1. Calculate the total spent across all categories
+        double totalSpent = 0;
+        for (Double value : categoryTotals.values()) {
+            totalSpent += value;
+        }
+
+        // FIX: Create an effectively final variable for the lambda expression
+        final double finalTotalSpent = totalSpent;
+
+        // 2. Handle the Reward Card for "Last Month"
+        if (isLast3Months) {
+            // Show the Reward Card and hide the AI Insight card
+            if (cardMonthlyReward != null) cardMonthlyReward.setVisibility(View.VISIBLE);
+            if (cardAiInsight != null) cardAiInsight.setVisibility(View.GONE);
+
+            tvTotalSpentLabel.setText("Total Spent: ₹" + Math.round(finalTotalSpent));
+
+            // Fetch budget from Firestore to determine the medal
+            db.collection("Users").document(userId).get().addOnSuccessListener(userDoc -> {
+                double budget = userDoc.contains("monthly_budget") ? userDoc.getDouble("monthly_budget") : 0;
+
+                if (finalTotalSpent <= budget && budget > 0) {
+                    // 🥇 SUCCESS: Show Gold Medal
+                    imgRewardMedal.setImageResource(R.drawable.ic_medal_gold);
+                    imgRewardMedal.setColorFilter(android.graphics.Color.parseColor("#FACC15"));
+                    tvRewardTitle.setText("Budget Champion!");
+                    tvRewardTitle.setTextColor(android.graphics.Color.parseColor("#FACC15"));
+                } else if (finalTotalSpent > budget && budget > 0) {
+                    // ⚠️ OVER BUDGET: Show Alert/Red Badge
+                    imgRewardMedal.setImageResource(R.drawable.ic_medal_gold);
+                    imgRewardMedal.setColorFilter(android.graphics.Color.parseColor("#FF5252"));
+                    tvRewardTitle.setText("Budget Exceeded");
+                    tvRewardTitle.setTextColor(android.graphics.Color.parseColor("#FF5252"));
+                } else {
+                    // Default case if no budget is set
+                    tvRewardTitle.setText("Monthly Summary");
+                    imgRewardMedal.setColorFilter(null);
+                    tvRewardTitle.setTextColor(android.graphics.Color.parseColor("#FFFFFF"));
+                }
+            });
+        } else {
+            // Default "This Month" view
+            if (cardMonthlyReward != null) cardMonthlyReward.setVisibility(View.GONE);
+            if (cardAiInsight != null) cardAiInsight.setVisibility(View.VISIBLE);
+        }
+
+        // 3. Keep your existing category rendering logic
         if (categoryTotals.isEmpty()) {
             tvTopCategoryName.setText("No data");
             tvTopCategoryAmount.setText("₹0");
             imgTopCategory.setImageResource(R.drawable.ic_general);
             return;
         }
+
         renderTopCategory(categoryTotals);
         renderCategoryBreakdown(categoryTotals);
     }
-
     private void renderCategoryBreakdown(Map<String, Double> categoryTotals) {
         layoutCategoryBars.removeAllViews();
         double maxValue = Collections.max(categoryTotals.values());

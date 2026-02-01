@@ -257,9 +257,6 @@
                         android:textColor="#8FA3BF"
                         android:visibility="gone"/>
                 </LinearLayout>
-
-
-
             </androidx.cardview.widget.CardView>
 
             <!-- Bottom Spacer -->
