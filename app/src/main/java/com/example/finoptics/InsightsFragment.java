@@ -226,62 +226,96 @@ public class InsightsFragment extends Fragment {
 
             // 1️⃣ Build prompt
             StringBuilder prompt = new StringBuilder();
+            double totalSpent = 0; // 🔹 Added for context
             for (Map.Entry<String, Double> e : data.entrySet()) {
                 prompt.append(e.getKey())
                         .append(": ")
                         .append(Math.round(e.getValue()))
                         .append("\n");
+                totalSpent += e.getValue(); // 🔹 Summing up for the 'spent' field
             }
 
-            // 2️⃣ Call Firebase Function
-            OkHttpClient client = new OkHttpClient();
+            // 🔹 1.5: Fetch Budget context before calling Function
+            double finalTotalSpent = totalSpent;
+            db.collection("Users").document(userId).get().addOnSuccessListener(userDoc -> {
+                double budget = userDoc.contains("monthly_budget") ? userDoc.getDouble("monthly_budget") : 0;
+                String prediction = (finalTotalSpent > budget) ? "Over budget" : "On track";
 
-            JSONObject json = new JSONObject();
-            try {
-                json.put("prompt", prompt.toString());
-            } catch (Exception ignored) {}
+                // 2️⃣ Call Firebase Function
+                OkHttpClient client = new OkHttpClient();
 
-            RequestBody body = RequestBody.create(
-                    json.toString(),
-                    MediaType.parse("application/json")
-            );
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("prompt", prompt.toString());
+                    json.put("budget", budget);      // 🔹 New field
+                    json.put("spent", finalTotalSpent); // 🔹 New field
+                    json.put("prediction", prediction); // 🔹 New field
+                } catch (Exception ignored) {}
 
-            Request request = new Request.Builder()
-                    .url("https://us-central1-finoptics-79357.cloudfunctions.net/getAiInsight")
-                    .post(body)
-                    .build();
+                // 🔹 2.5: Get Auth Token (Required for your new Auth Guard)
+                FirebaseAuth.getInstance().getCurrentUser().getIdToken(true).addOnSuccessListener(result -> {
+                    String idToken = result.getToken();
 
-            client.newCall(request).enqueue(new Callback() {
-                @Override
-                public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                    requireActivity().runOnUiThread(() -> {
-                        tvAiLoading.setVisibility(View.GONE);
-                        tvAiInsight.setVisibility(View.VISIBLE);
-                        tvAiInsight.setText("Failed to generate insight.");
+                    RequestBody body = RequestBody.create(
+                            json.toString(),
+                            MediaType.parse("application/json")
+                    );
+
+                    Request request = new Request.Builder()
+                            .url("https://us-central1-finoptics-79357.cloudfunctions.net/getAiInsight")
+                            .addHeader("Authorization", "Bearer " + idToken) // 🔹 Added for security
+                            .post(body)
+                            .build();
+
+                    client.newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                            if (getActivity() == null) return; // 🔹 Safety check
+                            requireActivity().runOnUiThread(() -> {
+                                tvAiLoading.setVisibility(View.GONE);
+                                tvAiInsight.setVisibility(View.VISIBLE);
+                                tvAiInsight.setText("Failed to generate insight.");
+                            });
+                        }
+
+                        @Override
+
+                        public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
+                            // 🔹 Using try (...) here automatically closes the response body
+                            try (ResponseBody responseBody = response.body()) {
+                                if (!response.isSuccessful()) {
+                                    updateUiWithError("Server error: " + response.code());
+                                    return;
+                                }
+
+                                String res = responseBody.string();
+                                JSONObject obj = new JSONObject(res);
+                                String reply = obj.getString("reply");
+
+                                if (getActivity() == null) return;
+                                requireActivity().runOnUiThread(() -> {
+                                    tvAiLoading.setVisibility(View.GONE);
+                                    tvAiInsight.setVisibility(View.VISIBLE);
+                                    tvAiInsight.setText(reply);
+                                });
+
+                            } catch (Exception e) {
+                                updateUiWithError("AI returned an invalid response.");
+                            }
+                        }
+
+                        // Small helper to keep those nested runOnUiThread brackets clean
+                        private void updateUiWithError(String msg) {
+                            if (getActivity() != null) {
+                                requireActivity().runOnUiThread(() -> {
+                                    tvAiLoading.setVisibility(View.GONE);
+                                    tvAiInsight.setVisibility(View.VISIBLE);
+                                    tvAiInsight.setText(msg);
+                                });
+                            }
+                        }
                     });
-                }
-
-                @Override
-                public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                    String res = response.body().string();
-                    try {
-                        JSONObject obj = new JSONObject(res);
-                        String reply = obj.getString("reply");
-
-                        requireActivity().runOnUiThread(() -> {
-                            tvAiLoading.setVisibility(View.GONE);
-                            tvAiInsight.setVisibility(View.VISIBLE);
-                            tvAiInsight.setText(reply);
-                        });
-
-                    } catch (Exception e) {
-                        requireActivity().runOnUiThread(() -> {
-                            tvAiLoading.setVisibility(View.GONE);
-                            tvAiInsight.setVisibility(View.VISIBLE);
-                            tvAiInsight.setText("AI returned an invalid response.");
-                        });
-                    }
-                }
+                });
             });
         });
     }

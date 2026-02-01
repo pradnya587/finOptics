@@ -55,9 +55,12 @@ public class HomeFragment extends Fragment {
     // 🔹 ALERT UI
     private View cardTopAlert;
     private TextView tvAlertTitle, tvAlertMessage;
-    private TextView tvTodayStatus;
 
+    private TextView tvTodayStatus, tvDailyLimitLabel;
 
+    // Top of HomeFragment.java
+
+    private TextView tvPredictiveInsight; // 🔹 ADD THIS LINE
 
     // Near the top of HomeFragment.java
 
@@ -87,8 +90,10 @@ public class HomeFragment extends Fragment {
         tvAlertTitle = view.findViewById(R.id.tvAlertTitle);
         tvAlertMessage = view.findViewById(R.id.tvAlertMessage);
 
+        tvTodayStatus = view.findViewById(R.id.tvTodayStatus);
+        tvDailyLimitLabel = view.findViewById(R.id.tvDailyLimitLabel);
 
-
+        tvPredictiveInsight = view.findViewById(R.id.tvPredictiveInsight); // 🔹 ADD THIS LINE
 
         // Setup RecyclerView
         rvRecentTransactions = view.findViewById(R.id.rvRecentTransactions);
@@ -226,52 +231,77 @@ public class HomeFragment extends Fragment {
 
     private void startTodaySync() {
         if (mAuth.getCurrentUser() == null) return;
+        String uid = mAuth.getCurrentUser().getUid();
 
+        // 1. Setup Timeframes
         Calendar cal = Calendar.getInstance();
+        int daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int currentDay = cal.get(Calendar.DAY_OF_MONTH);
+        int daysRemaining = (daysInMonth - currentDay) + 1; // Includes today
+
         cal.set(Calendar.HOUR_OF_DAY, 0);
         cal.set(Calendar.MINUTE, 0);
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
         Timestamp startOfToday = new Timestamp(cal.getTime());
 
-        // 🔹 Bind the 'On track' TextView from your UI
-        // Note: Ensure you have this ID in your XML and find it in onCreateView
+        // 2. Fetch Monthly Progress to calculate Dynamic Limit
+        db.collection("Users").document(uid).get().addOnSuccessListener(userDoc -> {
+            double budget = userDoc.contains("monthly_budget") ? userDoc.getDouble("monthly_budget") : 0;
 
+            // Fetch total spent this month to find remaining balance
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+            Timestamp startOfMonth = new Timestamp(cal.getTime());
 
-
-        todayListener = db.collection("Users")
-                .document(mAuth.getCurrentUser().getUid())
-                .collection("Expenses")
-                .whereGreaterThanOrEqualTo("timestamp", startOfToday)
-                .addSnapshotListener((value, error) -> {
-                    if (error != null || value == null) return;
-
-                    double todayTotal = 0;
-                    for (QueryDocumentSnapshot doc : value) {
-                        Double amt = doc.getDouble("amount");
-                        if (amt != null) todayTotal += amt;
-                    }
-
-                    if (progressTodayBar != null) {
-                        progressTodayBar.setMax((int) DAILY_LIMIT);
-                        progressTodayBar.setProgress((int) Math.min(todayTotal, DAILY_LIMIT));
-                    }
-
-                    // 🔹 NEW: Update the "On track" text color and message
-                    if (tvTodayStatus != null) {
-                        if (todayTotal > DAILY_LIMIT) {
-                            tvTodayStatus.setText("Over limit");
-                            tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#FF5252")); // Red
-                        } else {
-                            tvTodayStatus.setText("On track");
-                            tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#00E676")); // Mint Green
+            db.collection("Users").document(uid).collection("Expenses")
+                    .whereGreaterThanOrEqualTo("timestamp", startOfMonth)
+                    .get()
+                    .addOnSuccessListener(querySnapshot -> {
+                        double spentThisMonth = 0;
+                        for (QueryDocumentSnapshot doc : querySnapshot) {
+                            spentThisMonth += doc.getDouble("amount");
                         }
-                    }
-                });
+
+                        // 🔹 CALCULATE STS: (Remaining Budget / Days Left)
+                        double remainingBudget = Math.max(0, budget - spentThisMonth);
+                        double dynamicDailyLimit = remainingBudget / daysRemaining;
+
+                        // 3. Original Today Sync Logic with Dynamic Limit
+                        todayListener = db.collection("Users").document(uid)
+                                .collection("Expenses")
+                                .whereGreaterThanOrEqualTo("timestamp", startOfToday)
+                                .addSnapshotListener((value, error) -> {
+                                    if (error != null || value == null) return;
+
+                                    double todayTotal = 0;
+                                    for (QueryDocumentSnapshot doc : value) {
+                                        Double amt = doc.getDouble("amount");
+                                        if (amt != null) todayTotal += amt;
+                                    }
+
+                                    if (progressTodayBar != null) {
+                                        progressTodayBar.setMax((int) dynamicDailyLimit);
+                                        progressTodayBar.setProgress((int) Math.min(todayTotal, dynamicDailyLimit));
+                                    }
+
+                                    if (tvTodayStatus != null) {
+                                        if (todayTotal >= dynamicDailyLimit) {
+                                            tvTodayStatus.setText("Over limit");
+                                            tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#FF5252"));
+                                        } else {
+                                            tvTodayStatus.setText("On track");
+                                            tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#00E676"));
+                                        }
+                                    }
+                                });
+                    });
+        });
     }
 
     private void updateMonthlyUI(double spent) {
         tvSpentValue.setText("₹" + String.format("%,.0f", spent));
+
+        updatePredictiveInsight(spent);
 
         if (monthlyBudget > 0) {
             double remaining = monthlyBudget - spent;
@@ -373,7 +403,6 @@ public class HomeFragment extends Fragment {
     }
 
 
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
@@ -382,4 +411,36 @@ public class HomeFragment extends Fragment {
         if (todayListener != null) todayListener.remove();
         if (alertListener != null) alertListener.remove();
     }
+
+    // 🔹 Add this new helper method at the bottom of your class
+    private void updatePredictiveInsight(double spent) {
+        if (monthlyBudget <= 0 || spent <= 0) return;
+
+        Calendar cal = Calendar.getInstance();
+        int currentDay = cal.get(Calendar.DAY_OF_MONTH);
+        int daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        int daysRemaining = (daysInMonth - currentDay) + 1;
+
+        // Calculate Velocity (Avg spend per day)
+        double dailyVelocity = spent / currentDay;
+
+        // Calculate Runway (How many days money will last)
+        double remainingMoney = monthlyBudget - spent;
+        double daysOfRunwayLeft = remainingMoney / dailyVelocity;
+
+        if (tvPredictiveInsight != null) {
+            if (remainingMoney <= 0) {
+                tvPredictiveInsight.setText("Budget exhausted for this month.");
+                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FF5252")); // Red
+            } else if (daysOfRunwayLeft < daysRemaining) {
+                int depletionDay = currentDay + (int) daysOfRunwayLeft;
+                tvPredictiveInsight.setText("Careful: Budget may run out by day " + depletionDay);
+                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FFB74D")); // Orange
+            } else {
+                tvPredictiveInsight.setText("On track to last until end of month!");
+                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#22D3A6")); // Green
+            }
+        }
+    }
+
 }
