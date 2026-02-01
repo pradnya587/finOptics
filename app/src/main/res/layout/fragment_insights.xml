@@ -54,11 +54,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
                     android:minWidth="88dp"
-                    android:text="Last 3 Months"
+                    android:text="Last Month"
                     android:textColor="#8FA3BF"
                     android:textAllCaps="false"
                     app:cornerRadius="20dp"
                     app:backgroundTint="#111A2C"/>
+
+
             </com.google.android.material.button.MaterialButtonToggleGroup>
 
             <!-- Top Category -->
@@ -146,6 +148,7 @@
 
             <!-- AI Spending Insight -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/cardAiInsight"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
@@ -181,6 +184,49 @@
                             android:layout_marginStart="12dp"/>
                     </LinearLayout>
 
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardMonthlyReward"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        android:visibility="gone"
+                        app:cardCornerRadius="24dp"
+                        app:cardBackgroundColor="#111A2C"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="20dp"
+                            android:gravity="center">
+
+                            <ImageView
+                                android:id="@+id/imgRewardMedal"
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:src="@drawable/ic_medal_gold"/>
+
+                            <TextView
+                                android:id="@+id/tvRewardTitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Budget Master"
+                                android:textColor="#FFFFFF"
+                                android:textSize="18sp"
+                                android:textStyle="bold"
+                                android:layout_marginTop="8dp"/>
+
+                            <TextView
+                                android:id="@+id/tvTotalSpentLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Total Spent: ₹0"
+                                android:textColor="#22D3A6"
+                                android:layout_marginTop="4dp"/>
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
                     <!-- Generate Button -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGenerateAiInsight"
@@ -211,6 +257,9 @@
                         android:textColor="#8FA3BF"
                         android:visibility="gone"/>
                 </LinearLayout>
+
+
+
             </androidx.cardview.widget.CardView>
 
             <!-- Bottom Spacer -->

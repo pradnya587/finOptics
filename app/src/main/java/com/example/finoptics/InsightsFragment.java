@@ -49,6 +49,8 @@ public class InsightsFragment extends Fragment {
     private ImageView imgTopCategory;
     private MaterialButton btnGenerateAiInsight;
 
+    private androidx.cardview.widget.CardView cardAiInsight;
+
     private final Map<Boolean, Map<String, Double>> cache = new HashMap<>();
 
     @Nullable
@@ -81,12 +83,34 @@ public class InsightsFragment extends Fragment {
         tvAiInsight = view.findViewById(R.id.tvAiInsight);
         tvAiLoading = view.findViewById(R.id.tvAiLoading);
         btnGenerateAiInsight = view.findViewById(R.id.btnGenerateAiInsight);
+
+        cardAiInsight = view.findViewById(R.id.cardAiInsight);
+
+
     }
 
     private void setupTimeToggle() {
         toggleTimeFilter.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
             if (!isChecked) return;
+
+            // Use your existing variable to track the toggle state
             isLast3Months = checkedId == R.id.btnLast3Months;
+
+            // Hide AI Insight button and text when 'Last Month' is selected to avoid redundancy
+            if (isLast3Months) {
+                // This line removes the entire card container from the view
+                if (cardAiInsight != null) cardAiInsight.setVisibility(View.GONE);
+
+                btnGenerateAiInsight.setVisibility(View.GONE);
+                tvAiInsight.setVisibility(View.GONE);
+                tvAiLoading.setVisibility(View.GONE);
+            } else {
+                // Show it again when switching back to 'This Month'
+                if (cardAiInsight != null) cardAiInsight.setVisibility(View.VISIBLE);
+
+                btnGenerateAiInsight.setVisibility(View.VISIBLE);
+            }
+
             loadInsights();
         });
     }
@@ -101,6 +125,19 @@ public class InsightsFragment extends Fragment {
         }
 
         Timestamp startTimestamp = getStartTimestamp();
+
+        // NEW: Define the end of the range
+        Calendar endCal = Calendar.getInstance();
+        if (isLast3Months) {
+            // End of last month = 1st of this month at 00:00:00 minus 1ms
+            endCal.set(Calendar.DAY_OF_MONTH, 1);
+            endCal.set(Calendar.HOUR_OF_DAY, 0);
+            endCal.set(Calendar.MINUTE, 0);
+            endCal.set(Calendar.SECOND, 0);
+            endCal.set(Calendar.MILLISECOND, 0);
+        }
+        long endMillis = isLast3Months ? endCal.getTimeInMillis() : Long.MAX_VALUE;
+
         Log.d("INSIGHTS_DEBUG", "Query startTimestamp: " + startTimestamp.toDate());
 
         db.collection("Users")
@@ -113,12 +150,10 @@ public class InsightsFragment extends Fragment {
                     Map<String, Double> categoryTotals = new HashMap<>();
 
                     for (QueryDocumentSnapshot doc : snapshot) {
-                        // Print each document for debugging
                         Log.d("INSIGHTS_DEBUG", "Doc ID: " + doc.getId() + " Data: " + doc.getData());
 
                         String category = doc.getString("category");
 
-                        // Try both amount field types
                         Double amount = doc.getDouble("amount");
                         if (amount == null) {
                             Object amtObj = doc.get("amount");
@@ -126,7 +161,6 @@ public class InsightsFragment extends Fragment {
                             else if (amtObj instanceof Double) amount = (Double) amtObj;
                         }
 
-                        // Try both timestamp types
                         Timestamp ts = doc.getTimestamp("timestamp");
                         long tsMillis = 0;
                         if (ts != null) tsMillis = ts.toDate().getTime();
@@ -137,8 +171,8 @@ public class InsightsFragment extends Fragment {
 
                         if (category == null || amount == null) continue;
 
-                        // Only include if after startTimestamp
-                        if (tsMillis < startTimestamp.toDate().getTime()) continue;
+                        // UPDATED FILTER: Check both start and end
+                        if (tsMillis < startTimestamp.toDate().getTime() || tsMillis >= endMillis) continue;
 
                         categoryTotals.put(
                                 category,
@@ -328,8 +362,13 @@ public class InsightsFragment extends Fragment {
         cal.set(Calendar.SECOND, 0);
         cal.set(Calendar.MILLISECOND, 0);
 
-        if (isLast3Months) cal.add(Calendar.MONTH, -3);
-        else cal.set(Calendar.DAY_OF_MONTH, 1);
+        if (isLast3Months) {
+            // Change: Move back 1 month and set to the 1st day
+            cal.add(Calendar.MONTH, -1);
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+        } else {
+            cal.set(Calendar.DAY_OF_MONTH, 1);
+        }
 
         return new Timestamp(cal.getTime());
     }
