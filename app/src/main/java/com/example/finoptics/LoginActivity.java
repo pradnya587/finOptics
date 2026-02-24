@@ -91,7 +91,17 @@ public class LoginActivity extends AppCompatActivity {
 
     // NEW METHOD: Redirects user based on whether budget is set
     private void checkUserBudgetAndNavigate() {
-        String userId = mAuth.getCurrentUser().getUid();
+
+        FirebaseUser user = mAuth.getCurrentUser();
+        if (user == null) return;
+
+        String userId = user.getUid();
+
+        // 🔐 STORE UID for NotificationListenerService (CRITICAL)
+        getSharedPreferences("FinOptics", MODE_PRIVATE)
+                .edit()
+                .putString("uid", userId)
+                .apply();
 
         db.collection("Users").document(userId).get()
                 .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {

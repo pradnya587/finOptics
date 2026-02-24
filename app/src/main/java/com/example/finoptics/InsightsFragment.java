@@ -10,6 +10,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.content.Intent;
+
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,6 +59,9 @@ public class InsightsFragment extends Fragment {
 
     private final Map<Boolean, Map<String, Double>> cache = new HashMap<>();
 
+    private MaterialButton btnViewCalendar;
+
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -71,6 +76,8 @@ public class InsightsFragment extends Fragment {
         bindViews(view);
         setupTimeToggle();
         setupAiButton();
+        setupCalendarButton();
+
 
         loadInsights(); // default = this month
         return view;
@@ -95,8 +102,17 @@ public class InsightsFragment extends Fragment {
         tvRewardTitle = view.findViewById(R.id.tvRewardTitle);
         tvTotalSpentLabel = view.findViewById(R.id.tvTotalSpentLabel);
 
+        btnViewCalendar = view.findViewById(R.id.btnViewCalendar);
+
 
     }
+
+    private void setupCalendarButton() {
+        btnViewCalendar.setOnClickListener(v -> {
+            startActivity(new Intent(getActivity(), SpendingCalendarActivity.class));
+        });
+    }
+
 
     private void setupTimeToggle() {
         toggleTimeFilter.addOnButtonCheckedListener((group, checkedId, isChecked) -> {

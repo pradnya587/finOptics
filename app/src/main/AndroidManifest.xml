@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <!-- ✅ INTERNET PERMISSION MUST BE HERE -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
 
     <application
         android:allowBackup="true"
@@ -15,31 +18,49 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FinOptics"
         tools:targetApi="31">
-
+        <activity
+            android:name=".SpendingCalendarActivity"
+            android:exported="false" />
         <activity
             android:name=".AddExpenseActivity"
             android:exported="false" />
-
         <activity
             android:name=".SetupActivity"
             android:exported="false" />
-
         <activity
             android:name=".HomeActivity"
             android:exported="false" />
-
         <activity
             android:name=".SignUpActivity"
             android:exported="false" />
-
         <activity
             android:name=".LoginActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".MyNotificationListener"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+
+        <receiver
+            android:name=".SMSReceiver"
+            android:exported="true">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
 
     </application>
 

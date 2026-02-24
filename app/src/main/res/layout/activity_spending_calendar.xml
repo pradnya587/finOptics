@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B1220">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingBottom="12dp">
+
+            <ImageView
+                android:id="@+id/btnBack"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:src="@drawable/ic_back"
+                app:tint="#FFFFFF"/>
+
+            <TextView
+                android:id="@+id/tvTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Spending Calendar"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:layout_marginStart="12dp"/>
+        </LinearLayout>
+
+        <!-- Month Selector -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:paddingVertical="8dp"
+            android:background="#111B2E"
+            android:clipToPadding="false"
+            android:paddingHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:backgroundTintMode="add">
+
+            <ImageView
+                android:id="@+id/btnPrevMonth"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_arrow_left"
+                app:tint="#8FA3BF"/>
+
+            <TextView
+                android:id="@+id/tvMonthYear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="February 2026"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginHorizontal="16dp"/>
+
+            <ImageView
+                android:id="@+id/btnNextMonth"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:src="@drawable/ic_arrow_right"
+                app:tint="#8FA3BF"/>
+        </LinearLayout>
+
+        <!-- Week Labels -->
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="7"
+            android:layout_marginTop="8dp">
+
+            <TextView android:text="S" style="@style/CalendarHeader"/>
+            <TextView android:text="M" style="@style/CalendarHeader"/>
+            <TextView android:text="T" style="@style/CalendarHeader"/>
+            <TextView android:text="W" style="@style/CalendarHeader"/>
+            <TextView android:text="T" style="@style/CalendarHeader"/>
+            <TextView android:text="F" style="@style/CalendarHeader"/>
+            <TextView android:text="S" style="@style/CalendarHeader"/>
+        </GridLayout>
+
+        <!-- Calendar Grid -->
+        <GridLayout
+            android:id="@+id/calendarGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="7"
+            android:layout_marginTop="8dp"
+            android:padding="4dp"
+            android:background="#111B2E"
+            android:clipToPadding="false"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"/>
+
+        <!-- Legend -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:text="Less"
+                android:textColor="#8FA3BF"
+                android:layout_marginEnd="8dp"
+                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <!-- Legend Blocks -->
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="#1E293B"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginVertical="4dp"
+                android:backgroundTintMode="add"
+                android:clipToOutline="true"
+                android:outlineProvider="background"/>
+
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="#1F6FEB"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginVertical="4dp"
+                android:clipToOutline="true"
+                android:outlineProvider="background"/>
+
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="#22D3A6"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginVertical="4dp"
+                android:clipToOutline="true"
+                android:outlineProvider="background"/>
+
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="#FACC15"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginVertical="4dp"
+                android:clipToOutline="true"
+                android:outlineProvider="background"/>
+
+            <View
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:background="#EF4444"
+                android:layout_marginHorizontal="4dp"
+                android:layout_marginVertical="4dp"
+                android:clipToOutline="true"
+                android:outlineProvider="background"/>
+
+            <TextView
+                android:text="More"
+                android:textColor="#8FA3BF"
+                android:textStyle="bold"
+                android:layout_marginStart="8dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

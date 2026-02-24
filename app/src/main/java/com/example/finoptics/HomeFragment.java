@@ -50,7 +50,7 @@ public class HomeFragment extends Fragment {
     private ListenerRegistration monthlyStatsListener, recentTransactionsListener, todayListener, alertListener;
 
     private double monthlyBudget = 0;
-    private final double DAILY_LIMIT = 500.0;
+
 
     // 🔹 ALERT UI
     private View cardTopAlert;
@@ -269,6 +269,15 @@ public class HomeFragment extends Fragment {
                         double remainingBudget = Math.max(0, budget - spentThisMonth);
                         double dynamicDailyLimit = remainingBudget / daysRemaining;
 
+
+
+                        if (tvDailyLimitLabel != null) {
+                            tvDailyLimitLabel.setText(
+                                    "Daily limit ₹" + (int) Math.ceil(dynamicDailyLimit)
+                            );
+                        }
+
+
                         // 3. Original Today Sync Logic with Dynamic Limit
                         todayListener = db.collection("Users").document(uid)
                                 .collection("Expenses")
@@ -291,6 +300,9 @@ public class HomeFragment extends Fragment {
                                         if (todayTotal >= dynamicDailyLimit) {
                                             tvTodayStatus.setText("Over limit");
                                             tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#FF5252"));
+
+
+
                                         } else {
                                             tvTodayStatus.setText("On track");
                                             tvTodayStatus.setTextColor(android.graphics.Color.parseColor("#00E676"));
@@ -418,32 +430,47 @@ public class HomeFragment extends Fragment {
 
     // 🔹 Add this new helper method at the bottom of your class
     private void updatePredictiveInsight(double spent) {
-        if (monthlyBudget <= 0 || spent <= 0) return;
+        if (monthlyBudget <= 0 || spent <= 0 || tvPredictiveInsight == null) return;
 
         Calendar cal = Calendar.getInstance();
         int currentDay = cal.get(Calendar.DAY_OF_MONTH);
         int daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
         int daysRemaining = (daysInMonth - currentDay) + 1;
 
-        // Calculate Velocity (Avg spend per day)
+        // 🔹 Burn rate (average spend per day so far)
         double dailyVelocity = spent / currentDay;
 
-        // Calculate Runway (How many days money will last)
+        // 🔹 Remaining budget
         double remainingMoney = monthlyBudget - spent;
-        double daysOfRunwayLeft = remainingMoney / dailyVelocity;
 
-        if (tvPredictiveInsight != null) {
-            if (remainingMoney <= 0) {
-                tvPredictiveInsight.setText("Budget exhausted for this month.");
-                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FF5252")); // Red
-            } else if (daysOfRunwayLeft < daysRemaining) {
-                int depletionDay = currentDay + (int) daysOfRunwayLeft;
-                tvPredictiveInsight.setText("Careful: Budget may run out by day " + depletionDay);
-                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FFB74D")); // Orange
-            } else {
-                tvPredictiveInsight.setText("On track to last until end of month!");
-                tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#22D3A6")); // Green
-            }
+        // 🔹 Projected total spend at current rate
+        double projectedTotalSpend = dailyVelocity * daysInMonth;
+
+        // 🔹 Budget overshoot (if any)
+        double overshootAmount = projectedTotalSpend - monthlyBudget;
+
+        // 🔹 Safe daily spend for rest of month
+        double safeDailySpend = remainingMoney / daysRemaining;
+
+        if (remainingMoney <= 0) {
+            tvPredictiveInsight.setText("Budget exhausted for this month.");
+            tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FF5252")); // Red
+            return;
+        }
+
+        // 🔥 Case 1: User is on track to exceed budget
+        if (overshootAmount > 0) {
+            tvPredictiveInsight.setText(
+                    "At this rate, you may exceed your budget by ₹" + (int) overshootAmount
+            );
+            tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#FFB74D")); // Orange
+        }
+        // ✅ Case 2: User is safe — show guidance
+        else {
+            tvPredictiveInsight.setText(
+                    "You can safely spend ₹" + (int) safeDailySpend + " per day"
+            );
+            tvPredictiveInsight.setTextColor(android.graphics.Color.parseColor("#22D3A6")); // Green
         }
     }
 

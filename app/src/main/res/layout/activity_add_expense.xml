@@ -4,24 +4,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#F8F9FB">
+    android:background="#0B1220">
 
+    <!-- Optional subtle hint -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Smart Entry"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:textColor="#1A1A1A"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Describe your expense naturally."
+        android:text="Describe your expense naturally"
         android:textSize="14sp"
-        android:textColor="#757575"
-        android:layout_marginBottom="24dp"/>
+        android:textColor="#8FA3BF"
+        android:layout_marginBottom="16dp"/>
 
     <EditText
         android:id="@+id/etSmartInput"
@@ -30,10 +22,11 @@
         android:hint="Try: '200 for fried rice with Rahul'"
         android:inputType="textMultiLine"
         android:gravity="top"
-        android:background="@drawable/edittext_bg"
+        android:background="@drawable/edittext_bg_dark"
         android:padding="16dp"
         android:textSize="18sp"
-        android:textColor="#1A1A1A"/>
+        android:textColor="#FFFFFF"
+        android:textColorHint="#64748B"/>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -41,18 +34,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:visibility="gone" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cardDetectionPreview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
         android:visibility="gone"
         app:cardCornerRadius="12dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="#E0F2F1">
+        app:cardBackgroundColor="#0F766E">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -65,7 +58,7 @@
                 android:layout_width="20dp"
                 android:layout_height="20dp"
                 android:src="@android:drawable/ic_menu_search"
-                app:tint="#00796B"/>
+                app:tint="#CCFBF1"/>
 
             <TextView
                 android:id="@+id/tvDetectionSummary"
@@ -73,26 +66,32 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="12dp"
                 android:text="Detected: ₹0.0 for Miscellaneous"
-                android:textColor="#004D40"
+                android:textColor="#ECFEFF"
                 android:textSize="14sp"
                 android:textStyle="bold" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
+    <!-- Spacer: pushes button up, leaves room for voice UI -->
     <View
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="32dp"/>
 
     <Button
         android:id="@+id/btnSaveExpense"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:text="Confirm &amp; Add"
-        android:backgroundTint="#00D2B4"
+        android:text="Confirm and Add"
+        android:backgroundTint="#22D3A6"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         android:textStyle="bold"
         app:cornerRadius="12dp"/>
+
+    <!-- Reserved space for future voice input -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
 
 </LinearLayout>

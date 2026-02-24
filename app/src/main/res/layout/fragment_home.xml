@@ -145,7 +145,7 @@
                         android:layout_marginTop="16dp"
                         android:layout_marginBottom="8dp"
                         android:text="Calculating runway..."
-                        android:textColor="#8FA3BF"
+                        android:textColor="#A5B4CF"
                         android:textSize="13sp"
                         android:textStyle="italic"
                         android:gravity="center"

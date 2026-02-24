@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="@color/white">
+    android:background="#0B1220">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,114 +16,160 @@
         <!-- App Logo -->
         <ImageView
             android:id="@+id/appLogo"
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-
-            android:layout_marginTop="40dp"
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_marginTop="36dp"
             android:contentDescription="@string/app_name" />
 
-        <!-- Welcome Text -->
+        <!-- Welcome -->
         <TextView
-            android:id="@+id/welcomeText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome back!"
-            android:textSize="24sp"
+            android:text="Welcome back"
+            android:textSize="26sp"
             android:textStyle="bold"
-            android:textColor="@color/black"
-            android:layout_marginTop="20dp" />
+            android:textColor="#FFFFFF"
+            android:layout_marginTop="20dp"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Login to your account"
-            android:textSize="16sp"
-            android:layout_marginBottom="20dp" />
+            android:text="Login to your FinOptics account"
+            android:textSize="14sp"
+            android:textColor="#8FA3BF"
+            android:layout_marginBottom="24dp"/>
 
-        <!-- Username Input -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etUsername"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Username"
-                android:inputType="textPersonName" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <!-- Password Input -->
-        <com.google.android.material.textfield.TextInputLayout
+        <!-- Login Card -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
+            app:cardCornerRadius="24dp"
+            app:cardBackgroundColor="#0F172A"
+            app:cardElevation="10dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etPassword"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="48dp"
-                android:padding="12dp"
-                android:hint="Password"
-                android:inputType="textPassword" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="22dp">
 
-        <!-- Sign In Button -->
-        <Button
-            android:id="@+id/btnLogin"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Login"
-            android:backgroundTint="@color/teal_700"
-            android:textColor="@color/white"
-            android:layout_marginTop="20dp"
-            android:padding="12dp"
-            android:gravity="center" />
+                <!-- Username -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Username"
+                    app:hintEnabled="true"
+                    app:expandedHintEnabled="true"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="#020617"
+                    app:boxStrokeColor="#22D3A6"
+                    app:boxStrokeWidth="1dp"
+                    app:boxStrokeWidthFocused="2dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:hintTextColor="#94A3B8">
 
-        <!-- Or Sign In With -->
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etUsername"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:textColor="#FFFFFF"
+                        android:inputType="textPersonName"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Password -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:hint="Password"
+                    app:hintEnabled="true"
+                    app:expandedHintEnabled="true"
+                    app:boxBackgroundMode="filled"
+                    app:boxBackgroundColor="#020617"
+                    app:boxStrokeColor="#22D3A6"
+                    app:boxStrokeWidth="1dp"
+                    app:boxStrokeWidthFocused="2dp"
+                    app:boxCornerRadiusTopStart="16dp"
+                    app:boxCornerRadiusTopEnd="16dp"
+                    app:boxCornerRadiusBottomStart="16dp"
+                    app:boxCornerRadiusBottomEnd="16dp"
+                    app:passwordToggleEnabled="true"
+                    app:hintTextColor="#94A3B8">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPassword"
+                        android:layout_width="match_parent"
+                        android:layout_height="56dp"
+                        android:textColor="#FFFFFF"
+                        android:inputType="textPassword"/>
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Login Button -->
+                <Button
+                    android:id="@+id/btnLogin"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="Login"
+                    android:textAllCaps="false"
+                    android:textStyle="bold"
+                    android:textColor="#0B1220"
+                    android:backgroundTint="#22D3A6"
+                    android:layout_marginTop="26dp"
+                    app:cornerRadius="16dp"/>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Or -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Or sign in with"
-            android:layout_marginTop="20dp" />
+            android:text="Or continue with"
+            android:textColor="#8FA3BF"
+            android:textSize="13sp"
+            android:layout_marginTop="26dp"/>
 
-        <!-- Social Login Buttons -->
+        <!-- Social Buttons -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
-            android:layout_marginTop="10dp">
+            android:layout_marginTop="14dp">
 
             <ImageButton
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:background="@null"
-                android:contentDescription="Google" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/social_btn_bg"
+                android:contentDescription="Google"/>
 
             <ImageButton
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:background="@null"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/social_btn_bg"
                 android:layout_marginStart="20dp"
-                android:contentDescription="Facebook" />
+                android:contentDescription="Facebook"/>
 
             <ImageButton
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:background="@null"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/social_btn_bg"
                 android:layout_marginStart="20dp"
-                android:contentDescription="Twitter" />
+                android:contentDescription="Twitter"/>
         </LinearLayout>
 
-        <!-- Sign Up Redirect -->
+        <!-- Signup -->
         <TextView
             android:id="@+id/tvSignUp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Don't have an account? Sign up here"
-            android:textColor="@color/teal_700"
-            android:layout_marginTop="20dp" />
+            android:text="Don’t have an account? Sign up"
+            android:textColor="#22D3A6"
+            android:textSize="14sp"
+            android:layout_marginTop="28dp"/>
+
     </LinearLayout>
 </ScrollView>
